@@ -40,12 +40,12 @@ const BOTTOM_NAV = [
 function BrandMark() {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 shadow-[0_0_12px_rgba(59,130,246,0.4)]">
+      <div className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 shadow-brand-glow-sm">
         <div className="h-3 w-3 rotate-45 rounded-sm bg-white/90" />
       </div>
-      <span className="text-sm font-semibold tracking-tight text-zinc-100">
+      <span className="text-sm font-semibold tracking-tight text-foreground">
         Vesta
-        <span className="ml-px text-blue-400">OS</span>
+        <span className="ml-px text-primary">OS</span>
       </span>
     </div>
   )
@@ -71,17 +71,17 @@ function NavItem({
       className={cn(
         'group flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium transition-all duration-150',
         active
-          ? 'bg-blue-500/[0.12] text-blue-300 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.18)]'
-          : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-100',
+          ? 'bg-primary/[0.12] text-primary ring-1 ring-inset ring-primary/[0.18]'
+          : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
       )}
     >
       <Icon
         weight={active ? 'fill' : 'regular'}
-        className={cn('h-4 w-4 shrink-0', active ? 'text-blue-400' : 'text-zinc-500 group-hover:text-zinc-300')}
+        className={cn('h-4 w-4 shrink-0', active ? 'text-primary' : 'text-muted-foreground/70 group-hover:text-muted-foreground')}
       />
       <span className="flex-1">{label}</span>
       {active && (
-        <CaretRight weight="bold" className="h-3 w-3 text-blue-400/60" />
+        <CaretRight weight="bold" className="h-3 w-3 text-primary/60" />
       )}
     </Link>
   )
@@ -96,12 +96,12 @@ function SidebarContent({
 }) {
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-14 items-center border-b border-zinc-800/60 px-4">
+      <div className="flex h-14 items-center border-b border-border px-4">
         <BrandMark />
       </div>
 
       <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
-        <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
+        <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
           Navigation
         </p>
         {NAV_ITEMS.map((item) => (
@@ -116,7 +116,7 @@ function SidebarContent({
         ))}
 
         <div className="mt-auto pt-4">
-          <Separator className="mb-4 bg-zinc-800/60" />
+          <Separator className="mb-4 bg-border" />
           {BOTTOM_NAV.map((item) => (
             <NavItem
               key={item.href}
@@ -130,18 +130,18 @@ function SidebarContent({
         </div>
       </div>
 
-      <div className="border-t border-zinc-800/60 px-3 py-3">
-        <div className="flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-zinc-800/40">
+      <div className="border-t border-border px-3 py-3">
+        <div className="flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-muted/40">
           <Avatar size="sm">
             <AvatarFallback className="bg-gradient-to-br from-blue-600 to-violet-600 text-[10px] font-bold text-white">
               JL
             </AvatarFallback>
           </Avatar>
           <div className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-xs font-medium text-zinc-200">Jaime Luna</span>
-            <span className="truncate text-[10px] text-zinc-500">Administrator</span>
+            <span className="truncate text-xs font-medium text-foreground/90">Jaime Luna</span>
+            <span className="truncate text-[10px] text-muted-foreground/70">Administrator</span>
           </div>
-          <CaretRight weight="bold" className="h-3 w-3 shrink-0 text-zinc-600" />
+          <CaretRight weight="bold" className="h-3 w-3 shrink-0 text-muted-foreground/50" />
         </div>
       </div>
     </div>
@@ -150,22 +150,22 @@ function SidebarContent({
 
 function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-zinc-800/60 bg-zinc-950/80 px-4 backdrop-blur-sm lg:px-6">
+    <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-sm lg:px-6">
       <Button
         variant="ghost"
         size="icon-sm"
-        className="shrink-0 text-zinc-400 hover:text-zinc-100 lg:hidden"
+        className="shrink-0 text-muted-foreground hover:text-foreground lg:hidden"
         onClick={onMenuClick}
       >
         <List className="h-4 w-4" />
       </Button>
 
       <div className="relative flex-1 max-w-sm">
-        <MagnifyingGlass className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
+        <MagnifyingGlass className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/70" />
         <input
           type="search"
           placeholder="Search properties, tenants..."
-          className="h-8 w-full rounded-lg border border-zinc-800 bg-zinc-900/60 pl-8 pr-3 text-xs text-zinc-300 placeholder:text-zinc-600 focus:border-blue-500/40 focus:outline-none focus:ring-1 focus:ring-blue-500/20"
+          className="h-8 w-full rounded-lg border border-border bg-card/60 pl-8 pr-3 text-xs text-foreground/90 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
         />
       </div>
 
@@ -173,22 +173,22 @@ function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
         <Button
           variant="ghost"
           size="icon-sm"
-          className="relative text-zinc-400 hover:text-zinc-100"
+          className="relative text-muted-foreground hover:text-foreground"
         >
           <Bell className="h-4 w-4" />
-          <span className="absolute right-1 top-1 flex h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_4px_rgba(59,130,246,0.8)]" />
+          <span className="absolute right-1 top-1 flex h-1.5 w-1.5 rounded-full bg-primary shadow-brand-glow-xs" />
         </Button>
 
-        <div className="ml-1 h-4 w-px bg-zinc-800" />
+        <div className="ml-1 h-4 w-px bg-border" />
 
-        <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-zinc-800/60">
+        <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/60">
           <Avatar size="sm">
             <AvatarFallback className="bg-gradient-to-br from-blue-600 to-violet-600 text-[10px] font-bold text-white">
               JL
             </AvatarFallback>
           </Avatar>
-          <span className="hidden text-xs font-medium text-zinc-300 sm:block">Jaime</span>
-          <CaretRight weight="bold" className="h-3 w-3 rotate-90 text-zinc-500" />
+          <span className="hidden text-xs font-medium text-foreground/75 sm:block">Jaime</span>
+          <CaretRight weight="bold" className="h-3 w-3 rotate-90 text-muted-foreground/70" />
         </button>
       </div>
     </header>
@@ -200,9 +200,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [sheetOpen, setSheetOpen] = useState(false)
 
   return (
-    <div className="dark flex h-screen overflow-hidden bg-zinc-950">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-zinc-800/60 bg-zinc-900/40 lg:flex">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card/40 lg:flex">
         <SidebarContent pathname={pathname} />
       </aside>
 
@@ -210,7 +210,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent
           side="left"
-          className="w-60 border-zinc-800/60 bg-zinc-900 p-0"
+          className="w-60 border-border bg-card p-0"
           showCloseButton={false}
         >
           <SheetTitle className="sr-only">Navigation</SheetTitle>

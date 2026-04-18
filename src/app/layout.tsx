@@ -32,7 +32,7 @@ export default function RootLayout({
       lang="en"
       className={`dark ${geistSans.variable} ${geistMono.variable} ${jetbrainsMono.variable}`}
     >
-      <body className="min-h-screen bg-zinc-950 antialiased">{children}</body>
+      <body className="min-h-screen antialiased">{children}</body>
     </html>
   )
 }

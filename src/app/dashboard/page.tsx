@@ -97,7 +97,7 @@ export default function DashboardPage() {
       color: 'text-danger' as string,
       bg: 'bg-danger/10' as string,
       label: `Rent overdue — ${t.name}`,
-      sub: `${t.unit} · $${t.rent.toLocaleString()}`,
+      sub: `${t.unit} · $${(t.rent ?? 0).toLocaleString()}`,
     })),
   ]
 

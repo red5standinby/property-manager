@@ -13,6 +13,10 @@
 # testing
 /coverage
 
+# local QA / probe scripts (throwaway, not part of the app)
+/qa-tmp/
+/qa-ui-probe.mjs
+
 # next.js
 /.next/
 /out/

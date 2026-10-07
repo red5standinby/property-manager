@@ -37,7 +37,7 @@ function SectionCard({
       <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <div className="flex items-center gap-2.5">
           <div className={`rounded-lg p-1.5 ${accent}`}><Icon weight="duotone" className="h-3.5 w-3.5" /></div>
-          <p className="text-sm font-medium text-foreground/90">{title}</p>
+          <h2 className="text-sm font-medium text-foreground/90">{title}</h2>
           <span className="rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground/70">{count}</span>
         </div>
         <Link href={href} className="inline-flex items-center gap-1 text-[11px] font-medium text-primary transition-colors hover:text-primary/80">
@@ -150,6 +150,7 @@ export default function OpsPage() {
                       type="button"
                       onClick={() => setReminded(m => ({ ...m, [r.payment.id]: !m[r.payment.id] }))}
                       title={isReminded ? 'Reminder sent' : 'Send payment reminder'}
+                      aria-label={isReminded ? `Reminder sent to ${r.tenantName}` : `Send payment reminder to ${r.tenantName}`}
                       className={`flex h-6 w-6 items-center justify-center rounded-lg transition-colors ${isReminded ? 'bg-primary/10 text-primary' : 'text-muted-foreground/70 hover:bg-primary/10 hover:text-primary'}`}
                     >
                       {isReminded ? <CheckCircle weight="fill" className="h-3.5 w-3.5" /> : <BellRinging className="h-3.5 w-3.5" />}
@@ -159,6 +160,7 @@ export default function OpsPage() {
                         type="button"
                         onClick={() => waiveFee(r.payment.id)}
                         title="Waive late fee"
+                        aria-label={`Waive late fee for ${r.tenantName}`}
                         className="flex h-6 w-6 items-center justify-center rounded-lg text-muted-foreground/70 transition-colors hover:bg-warning/10 hover:text-warning"
                       >
                         <Prohibit className="h-3.5 w-3.5" />

@@ -91,6 +91,10 @@ export function derivePayments(tenants: Tenant[]): Payment[] {
 export function deriveMaintenanceRequests(properties: Property[], tenants: Tenant[]): MaintenanceRequest[] {
   const propNames = new Map(properties.map(p => [p.id, p.name]))
 
+  // No tenants → no maintenance requests. Avoids divide-by-zero (i % 0 → NaN)
+  // which previously crashed every page when the app started empty.
+  if (tenants.length === 0) return []
+
   const templates = [
     { title: 'HVAC not cooling',       category: 'HVAC',     priority: 'high' as const,   icon: null },
     { title: 'Leaking kitchen faucet', category: 'Plumbing', priority: 'medium' as const, icon: null },

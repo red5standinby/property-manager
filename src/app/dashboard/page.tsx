@@ -66,7 +66,7 @@ export default function DashboardPage() {
   const totalUnits = properties.reduce((a, p) => a + p.units, 0)
   const occupied = tenants.length
   const totalRevenue = tenants.reduce((sum, t) => sum + t.rent, 0)
-  const openRequests = 5 // hardcoded for now — we'll build maintenance next
+  const openRequests = state.maintenanceRequests.filter(r => r.status === 'open').length
   const expiringTenants = tenants.filter(t => t.status === 'expiring')
   const lateTenants = tenants.filter(t => t.status === 'late')
 

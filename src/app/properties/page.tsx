@@ -26,7 +26,7 @@ type FormData = {
 }
 
 const emptyForm: FormData = {
-  name: '', address: '', units: '0', type: 'Multi-family', status: 'active',
+  name: '', address: '', units: '1', type: 'Multi-family', status: 'active',
 }
 
 function PropertyFormModal({

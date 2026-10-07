@@ -6,4 +6,5 @@ export const seedData: AppState = {
   leases: [],
   payments: [],
   maintenanceRequests: [],
+  role: 'admin',
 }

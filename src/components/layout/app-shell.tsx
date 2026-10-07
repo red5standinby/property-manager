@@ -14,6 +14,7 @@ import {
   House,
   List,
   MagnifyingGlass,
+  Pulse,
   Users,
   Wrench,
 } from '@phosphor-icons/react'
@@ -24,6 +25,7 @@ import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 
 const NAV_ITEMS = [
+  { href: '/ops',         label: 'Ops',         icon: Pulse          },
   { href: '/dashboard',   label: 'Dashboard',   icon: House          },
   { href: '/properties',  label: 'Properties',  icon: Buildings      },
   { href: '/tenants',     label: 'Tenants',     icon: Users          },

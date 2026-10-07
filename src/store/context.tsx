@@ -1,12 +1,10 @@
 'use client'
 
 import React, { createContext, useContext, useReducer, useEffect, useRef, type ReactNode } from 'react'
-import type { AppState, AppAction } from '@/src/lib/types'
+import type { AppState, AppAction, Role } from '@/src/lib/types'
 import { seedData } from '@/src/lib/seed'
-import { appReducer } from './reducer'
-import { deriveLeases, derivePayments, deriveMaintenanceRequests } from '@/src/lib/derived'
-
-const STORAGE_KEY = 'vestaos-state'
+import { appReducer, buildSeedState } from './reducer'
+import { storage } from '@/src/lib/storage'
 
 type AppDispatch = (action: AppAction) => void
 
@@ -14,43 +12,37 @@ const AppContext = createContext<{
   state: AppState
   dispatch: AppDispatch
   hydrated: boolean
+  role: Role
 } | null>(null)
 
 /** A stable, deterministic empty state. Used for SSR and the first client
  *  render so server HTML and hydration markup always match. Data is loaded
- *  from localStorage (and derived) in an effect after mount. */
+ *  from the storage adapter (and derived) in an effect after mount. */
 const EMPTY_STATE: AppState = {
   ...seedData,
   leases: [],
   payments: [],
   maintenanceRequests: [],
+  role: 'admin',
 }
 
-function withDerived(state: AppState): AppState {
+/** Normalize loaded state: guarantee a role and non-null arrays. Entities
+ *  are now first-class — no deriving on load. */
+function normalizeState(state: AppState): AppState {
   return {
     ...state,
-    leases: state.leases.length > 0
-      ? state.leases
-      : deriveLeases(state.properties, state.tenants),
-    payments: state.payments.length > 0
-      ? state.payments
-      : derivePayments(state.tenants),
-    maintenanceRequests: state.maintenanceRequests.length > 0
-      ? state.maintenanceRequests
-      : deriveMaintenanceRequests(state.properties, state.tenants),
+    role: state.role ?? 'admin',
+    leases: state.leases ?? [],
+    payments: state.payments ?? [],
+    maintenanceRequests: state.maintenanceRequests ?? [],
   }
 }
 
 function loadState(): AppState {
-  if (typeof window === 'undefined') return EMPTY_STATE
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      return withDerived(JSON.parse(raw) as AppState)
-    }
-  } catch { /* ignore corrupt data */ }
-
-  return withDerived(seedData)
+  const persisted = storage.loadState()
+  if (persisted) return normalizeState(persisted)
+  // First run: seed a real starter portfolio with explicit records.
+  return buildSeedState()
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -58,7 +50,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, undefined, () => EMPTY_STATE)
   const hydratedRef = useRef(false)
 
-  // Hydrate from localStorage after mount (client-only) to avoid
+  // Hydrate from the storage adapter after mount (client-only) to avoid
   // server/client markup mismatches (React hydration error #418).
   useEffect(() => {
     if (hydratedRef.current) return
@@ -70,21 +62,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hydratedRef.current) return
     const timer = requestAnimationFrame(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-      } catch { /* quota, silent */ }
+      storage.saveState(state)
     })
     return () => cancelAnimationFrame(timer)
   }, [state])
 
   return (
-    <AppContext.Provider value={{ state, dispatch, hydrated: hydratedRef.current }}>
+    <AppContext.Provider value={{ state, dispatch, hydrated: hydratedRef.current, role: state.role }}>
       {children}
     </AppContext.Provider>
   )
 }
 
-export function useApp(): { state: AppState; dispatch: AppDispatch; hydrated: boolean } {
+export function useApp(): { state: AppState; dispatch: AppDispatch; hydrated: boolean; role: Role } {
   const ctx = useContext(AppContext)
   if (!ctx) throw new Error('useApp must be used within <AppProvider>')
   return ctx

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useApp } from '@/src/store/context'
+import { collectedIncome, expectedMonthlyRent } from '@/src/lib/derived'
 import {
   Buildings, ChartBar, CurrencyDollar, FileText,
   Users, Wrench,
@@ -65,7 +66,9 @@ export default function DashboardPage() {
 
   const totalUnits = properties.reduce((a, p) => a + p.units, 0)
   const occupied = tenants.length
-  const totalRevenue = tenants.reduce((sum, t) => sum + t.rent, 0)
+  // Collected income comes from REAL payments, not expected rent.
+  const totalRevenue = collectedIncome(state.payments)
+  const expectedRent = expectedMonthlyRent(state)
   const openRequests = state.maintenanceRequests.filter(r => r.status === 'open').length
   const expiringTenants = tenants.filter(t => t.status === 'expiring')
   const lateTenants = tenants.filter(t => t.status === 'late')

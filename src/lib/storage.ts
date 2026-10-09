@@ -29,7 +29,7 @@ export interface StorageAdapter {
  * returns `null` from `loadState` and no-ops the writes when `window` is
  * not available.
  */
-export const storage: StorageAdapter = {
+export const localStorageAdapter: StorageAdapter = {
   loadState(): AppState | null {
     if (typeof window === 'undefined') return null
     try {
@@ -60,3 +60,20 @@ export const storage: StorageAdapter = {
     }
   },
 }
+
+// ─── Adapter selection ────────────────────────────────────────────
+//
+// Phase 2: flip to the remote (fetch) adapter by setting
+// NEXT_PUBLIC_VESTAOS_BACKEND=remote. Default stays local, so nothing
+// changes until we provision Supabase and opt in. See
+// Agent-OpenClaw/vestaos-phase2-plan.md.
+//
+// Both adapters satisfy StorageAdapter, so the store is oblivious to which
+// one is active — that's the whole point of the adapter pattern.
+import { remoteStorage } from './storage-remote'
+
+export const storage: StorageAdapter =
+  process.env.NEXT_PUBLIC_VESTAOS_BACKEND === 'remote'
+    ? remoteStorage
+    : localStorageAdapter
+

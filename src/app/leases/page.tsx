@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AppShell } from '@/src/components/layout/app-shell'
 import { useApp } from '@/src/store/context'
 import { StatusBadge } from '@/src/components/status-badge'
@@ -48,6 +48,10 @@ function LeaseFormModal({
   const [data, setData] = useState<LeaseFormData>(initial ?? {
     propertyId: '', unit: '', tenantIds: [], startDate: '', endDate: '', rent: '0', term: '12-month', status: 'active',
   })
+  // Re-seed on open / when targeting a different record (avoids stale form).
+  useEffect(() => { if (open) setData(initial ?? {
+    propertyId: '', unit: '', tenantIds: [], startDate: '', endDate: '', rent: '0', term: '12-month', status: 'active',
+  }) }, [open, initial])
   if (!open) return null
 
   const scopedTenants = tenants.filter(t => !data.propertyId || t.propertyId === data.propertyId)

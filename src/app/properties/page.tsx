@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { AppShell } from '@/src/components/layout/app-shell'
 import { useApp } from '@/src/store/context'
 import type { Property, PropertyStatus } from '@/src/lib/types'
-import { Buildings, Plus, MagnifyingGlass, SlidersHorizontal, MapPin, Users, PencilSimple, TrashSimple, X } from '@phosphor-icons/react'
+import { propertyOccupancy, propertyMonthlyRent } from '@/src/lib/derived'
+import { Buildings, Plus, MagnifyingGlass, MapPin, PencilSimple, TrashSimple, X, ArrowRight, House, CheckCircle, Clock } from '@phosphor-icons/react'
 
 const statusStyles: Record<string, string> = {
   active:     'bg-success/10 text-success border border-success/20',
@@ -14,19 +15,19 @@ const statusStyles: Record<string, string> = {
 }
 
 const statusOptions: PropertyStatus[] = ['active', 'renovation', 'pending']
+const typeOptions = ['Single-family', 'Duplex', 'Triplex', 'Townhome', 'Condo', 'Other']
 
 // ─── Property Form Modal ─────────────────────────────────────────
 
 type FormData = {
   name: string
   address: string
-  units: string
   type: string
   status: PropertyStatus
 }
 
 const emptyForm: FormData = {
-  name: '', address: '', units: '1', type: 'Multi-family', status: 'active',
+  name: '', address: '', type: 'Single-family', status: 'active',
 }
 
 function PropertyFormModal({
@@ -41,6 +42,12 @@ function PropertyFormModal({
   onClose: () => void
 }) {
   const [data, setData] = useState<FormData>(initial ?? emptyForm)
+
+  // Re-seed the form whenever the modal opens or targets a different record,
+  // otherwise editing record A then B shows A's stale values.
+  useEffect(() => {
+    if (open) setData(initial ?? emptyForm)
+  }, [open, initial])
 
   if (!open) return null
 
@@ -77,30 +84,15 @@ function PropertyFormModal({
                 placeholder="e.g. 123 Main St, Austin TX 78701"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-1.5 block text-[11px] font-medium text-muted-foreground/70">Units</label>
-                <input
-                  type="number" min={1}
-                  value={data.units}
-                  onChange={e => setData(d => ({ ...d, units: e.target.value }))}
-                  className="h-8 w-full rounded-lg border border-border bg-card/60 px-3 text-xs text-foreground/90 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[11px] font-medium text-muted-foreground/70">Type</label>
-                <select
-                  value={data.type}
-                  onChange={e => setData(d => ({ ...d, type: e.target.value }))}
-                  className="h-8 w-full rounded-lg border border-border bg-card/60 px-3 text-xs text-foreground/90 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
-                >
-                  <option>Multi-family</option>
-                  <option>Condo</option>
-                  <option>Townhome</option>
-                  <option>Single-family</option>
-                  <option>Commercial</option>
-                </select>
-              </div>
+            <div>
+              <label className="mb-1.5 block text-[11px] font-medium text-muted-foreground/70">Property Type</label>
+              <select
+                value={data.type}
+                onChange={e => setData(d => ({ ...d, type: e.target.value }))}
+                className="h-8 w-full rounded-lg border border-border bg-card/60 px-3 text-xs text-foreground/90 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
+              >
+                {typeOptions.map(t => <option key={t}>{t}</option>)}
+              </select>
             </div>
             <div>
               <label className="mb-1.5 block text-[11px] font-medium text-muted-foreground/70">Status</label>
@@ -131,7 +123,7 @@ function PropertyFormModal({
             </button>
             <button
               onClick={() => onSave(data)}
-              disabled={!data.name || !data.address || Number(data.units) < 1}
+              disabled={!data.name || !data.address}
               className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-brand-glow-sm transition-all hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {initial ? 'Save Changes' : 'Add Property'}
@@ -198,7 +190,6 @@ export default function PropertiesPage() {
     const payload: import('@/src/lib/types').AddPropertyPayload = {
       name: data.name,
       address: data.address,
-      units: Number(data.units),
       type: data.type,
       status: data.status as PropertyStatus,
     }
@@ -212,7 +203,6 @@ export default function PropertiesPage() {
       id: editTarget.id,
       name: data.name,
       address: data.address,
-      units: Number(data.units),
       type: data.type,
       status: data.status as PropertyStatus,
     }
@@ -234,7 +224,7 @@ export default function PropertiesPage() {
             <div>
               <h1 className="text-xl font-semibold text-foreground">Properties</h1>
               <p className="mt-1 text-xs text-muted-foreground/70">
-                {properties.length} properties · {properties.reduce((a, p) => a + p.units, 0)} total units
+                {properties.length} {properties.length === 1 ? 'property' : 'properties'}
               </p>
             </div>
             <button
@@ -258,10 +248,6 @@ export default function PropertiesPage() {
                 className="h-8 w-full rounded-lg border border-border bg-card/60 pl-8 pr-3 text-xs text-foreground/90 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
               />
             </div>
-            <button className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground">
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Filter
-            </button>
             {filters.map((f) => (
               <button
                 key={f}
@@ -276,44 +262,46 @@ export default function PropertiesPage() {
           {/* Grid */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {filtered.map((p) => {
-              const occupancyPct = p.units > 0 ? Math.round((p.occupied / p.units) * 100) : 0
+              const occupancy = propertyOccupancy(p.id, state.leases)
+              const rent = propertyMonthlyRent(p.id, state.leases)
               return (
-                <Link
-                  href={`/properties/${p.id}`}
+                <div
                   key={p.id}
                   className="group relative flex flex-col rounded-2xl border border-border bg-card/40 transition-all duration-200 hover:border-foreground/20 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_8px_40px_rgba(0,0,0,0.5)]"
                 >
-                  {/* Actions */}
-                  <div className="absolute right-3 top-3 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  {/* Actions — always visible so edit/delete are discoverable */}
+                  <div className="absolute right-3 top-3 z-10 flex gap-1">
                     <button
-                      onClick={() => setEditTarget({ id: p.id, data: { name: p.name, address: p.address, units: String(p.units), type: p.type, status: p.status } })}
+                      onClick={(e) => { e.stopPropagation(); setEditTarget({ id: p.id, data: { name: p.name, address: p.address, type: p.type, status: p.status } }) }}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-black/50 text-muted-foreground hover:bg-black/70 hover:text-foreground backdrop-blur-sm"
-                      title="Edit"
+                      title="Edit property"
+                      aria-label={`Edit ${p.name}`}
                     >
                       <PencilSimple className="h-3.5 w-3.5" />
                     </button>
                     <button
-                      onClick={() => setDeleteTarget(p)}
+                      onClick={(e) => { e.stopPropagation(); setDeleteTarget(p) }}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-black/50 text-muted-foreground hover:bg-danger/80 hover:text-white backdrop-blur-sm"
-                      title="Delete"
+                      title="Delete property"
+                      aria-label={`Delete ${p.name}`}
                     >
                       <TrashSimple className="h-3.5 w-3.5" />
                     </button>
                   </div>
 
                   {/* Image placeholder */}
-                  <div className="h-32 overflow-hidden rounded-t-2xl bg-gradient-to-br from-muted to-card">
-                    <div className="flex h-full items-center justify-center">
+                  <Link href={`/properties/${p.id}`} className="block">
+                    <div className="flex h-28 items-center justify-center overflow-hidden rounded-t-2xl bg-gradient-to-br from-muted to-card">
                       <Buildings weight="duotone" className="h-10 w-10 text-muted-foreground/30" />
                     </div>
-                  </div>
+                  </Link>
 
                   <div className="flex flex-1 flex-col p-4">
                     <div className="mb-3 flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-foreground group-hover:text-foreground">
+                        <Link href={`/properties/${p.id}`} className="block truncate text-sm font-medium text-foreground hover:text-primary">
                           {p.name}
-                        </p>
+                        </Link>
                         <div className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground/70">
                           <MapPin className="h-3 w-3 shrink-0" />
                           <span className="truncate">{p.address}</span>
@@ -324,42 +312,33 @@ export default function PropertiesPage() {
                       </span>
                     </div>
 
-                    <div className="mb-3 grid grid-cols-3 gap-2 rounded-xl bg-muted/40 p-3">
-                      <div>
-                        <p className="text-[10px] text-muted-foreground/50">Units</p>
-                        <p className="text-xs font-semibold text-foreground/90">{p.units}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-muted-foreground/50">Occupied</p>
-                        <p className="text-xs font-semibold text-foreground/90">{p.occupied}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-muted-foreground/50">Revenue</p>
-                        <p className="text-xs font-semibold text-foreground/90">{p.revenue}</p>
-                      </div>
+                    <div className="mb-3 flex items-center gap-2">
+                      {occupancy === 'occupied' ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-success/20 bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">
+                          <CheckCircle weight="fill" className="h-3 w-3" /> Occupied
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          <House className="h-3 w-3" /> Vacant
+                        </span>
+                      )}
+                      <span className="text-[11px] text-muted-foreground/60">{p.type}</span>
                     </div>
 
-                    <div>
-                      <div className="mb-1 flex items-center justify-between">
-                        <span className="flex items-center gap-1 text-[11px] text-muted-foreground/70">
-                          <Users className="h-3 w-3" />
-                          Occupancy
-                        </span>
-                        <span className="text-[11px] font-semibold text-foreground/75">{occupancyPct}%</span>
+                    <div className="mt-auto flex items-center justify-between border-t border-border/60 pt-3">
+                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/70">
+                        <Clock className="h-3 w-3" />
+                        {rent > 0 ? <span><span className="font-semibold text-foreground/90">${rent.toLocaleString()}</span>/mo</span> : <span>No active lease</span>}
                       </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            occupancyPct >= 90 ? 'bg-success' :
-                            occupancyPct >= 70 ? 'bg-primary' :
-                            occupancyPct >= 40 ? 'bg-warning' : 'bg-muted-foreground/30'
-                          }`}
-                          style={{ width: `${occupancyPct}%` }}
-                        />
-                      </div>
+                      <Link
+                        href={`/properties/${p.id}`}
+                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/10"
+                      >
+                        View <ArrowRight className="h-3 w-3" />
+                      </Link>
                     </div>
                   </div>
-                </Link>
+                </div>
               )
             })}
           </div>

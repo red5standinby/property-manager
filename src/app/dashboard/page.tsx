@@ -7,7 +7,7 @@ import { StatusBadge } from '@/src/components/status-badge'
 import {
   collectedIncome, expectedMonthlyRent, delinquencies,
   leasesWithMeta, isOpenRequest, maintenanceSpend,
-  formatDate, LEASE_EXPIRING_DAYS,
+  formatDate, LEASE_EXPIRING_DAYS, occupancyCounts, leaseStatus,
 } from '@/src/lib/derived'
 import {
   Buildings, CurrencyDollar, Users, Wrench,
@@ -18,12 +18,9 @@ export default function DashboardPage() {
   const { state } = useApp()
   const { properties, tenants, leases, payments, maintenanceRequests } = state
 
-  // ── Real figures (no dead Property.occupied / Property.revenue fields) ──
-  const totalUnits = properties.reduce((a, p) => a + (p.units || 0), 0)
-  const activeLeases = leases.filter(l => l.status !== 'ended')
-  const occupiedUnits = activeLeases.reduce(
-    (a, l) => a + (l.tenantIds?.length || 1), 0,
-  )
+  // ── Occupancy is derived: a home is occupied when it has an active lease ──
+  const activeLeases = leases.filter(l => leaseStatus(l) !== 'ended')
+  const occ = occupancyCounts(properties, leases)
 
   const collected = collectedIncome(payments)
   const expected = expectedMonthlyRent(state)
@@ -37,14 +34,12 @@ export default function DashboardPage() {
     l => l.status === 'expiring' || l.status === 'review',
   )
 
-  // ── Portfolio: occupancy/rent summed from REAL leases per property ──
+  // ── Portfolio: per-home occupancy/rent from REAL leases ──
   const portfolio = properties.map(p => {
     const propsLeases = activeLeases.filter(l => l.propertyId === p.id)
-    const occ = propsLeases.reduce((a, l) => a + (l.tenantIds?.length || 1), 0)
-    const units = p.units || 0
-    const pct = units > 0 ? Math.round((occ / units) * 100) : 0
+    const isOccupied = propsLeases.length > 0
     const rent = propsLeases.reduce((a, l) => a + l.rent, 0)
-    return { id: p.id, name: p.name, units, occ, pct, rent }
+    return { id: p.id, name: p.name, type: p.type, occupied: isOccupied, rent }
   })
 
   const stats = [
@@ -59,8 +54,8 @@ export default function DashboardPage() {
       icon: Warning, color: 'text-danger', bg: 'bg-danger/10', ring: 'ring-danger/10',
     },
     {
-      label: 'Occupancy', value: `${occupiedUnits}/${totalUnits}`,
-      sub: totalUnits > 0 ? `${Math.round((occupiedUnits / totalUnits) * 100)}% of units` : 'no units',
+      label: 'Occupied', value: `${occ.occupied}/${occ.total}`,
+      sub: occ.total > 0 ? `${occ.pct}% of homes leased` : 'no properties',
       icon: Users, color: 'text-violet-400', bg: 'bg-violet-500/10', ring: 'ring-violet-500/10',
     },
     {
@@ -138,16 +133,14 @@ export default function DashboardPage() {
                     <div className="min-w-0 flex-1">
                       <div className="mb-1.5 flex items-center justify-between gap-2">
                         <span className="truncate text-xs font-medium text-foreground/90">{p.name}</span>
-                        <span className="shrink-0 text-[11px] text-muted-foreground">{p.occ}/{p.units} units</span>
+                        <span className={`shrink-0 text-[11px] font-medium ${p.occupied ? 'text-success' : 'text-muted-foreground'}`}>
+                          {p.occupied ? 'Occupied' : 'Vacant'}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                          <div
-                            className={`h-full rounded-full ${p.pct >= 90 ? 'bg-success' : p.pct >= 75 ? 'bg-primary' : 'bg-warning'}`}
-                            style={{ width: `${p.pct}%` }}
-                          />
-                        </div>
-                        <span className="w-8 shrink-0 text-right text-[10px] font-medium text-foreground/75">{p.pct}%</span>
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground/70">
+                        <span>{p.type}</span>
+                        <span>·</span>
+                        <span>{p.rent > 0 ? `$${p.rent.toLocaleString()}/mo` : 'no active lease'}</span>
                       </div>
                     </div>
                     <span className="shrink-0 text-xs font-semibold text-foreground/90">${p.rent.toLocaleString()}</span>

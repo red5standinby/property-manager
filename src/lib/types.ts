@@ -17,14 +17,14 @@ export type ReqStatus      = 'open' | 'in-progress' | 'resolved'
 
 // ─── Core entities ────────────────────────────────────────────────
 
+/** A property is a single rentable home (1–10 homes per portfolio, not a
+ *  multi-unit building). Occupancy is DERIVED from whether an active lease
+ *  exists — it is not a stored field. There is no unit count. */
 export interface Property {
   id: string
   name: string
   address: string
-  units: number
-  occupied: number
   type: string
-  revenue: string
   status: 'active' | 'renovation' | 'pending'
   createdAt: string
   updatedAt: string
@@ -136,7 +136,7 @@ export interface AppState {
 
 // ─── Action payloads ──────────────────────────────────────────────
 
-export type AddPropertyPayload   = Omit<Property, 'id' | 'createdAt' | 'updatedAt' | 'occupied' | 'revenue'>
+export type AddPropertyPayload   = Omit<Property, 'id' | 'createdAt' | 'updatedAt'>
 export type UpdatePropertyPayload = Partial<Property> & { id: string }
 export type AddTenantPayload     = Omit<Tenant, 'id' | 'since' | 'leaseLabel'>
 export type UpdateTenantPayload  = Partial<Tenant> & { id: string }

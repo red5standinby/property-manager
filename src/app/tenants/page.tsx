@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AppShell } from '@/src/components/layout/app-shell'
 import { useApp } from '@/src/store/context'
 import type { Tenant, TenantStatus } from '@/src/lib/types'
@@ -54,6 +54,8 @@ function TenantFormModal({
   onClose: () => void
 }) {
   const [data, setData] = useState<TenantFormData>(initial ?? emptyForm())
+  // Re-seed on open / when targeting a different record (avoids stale form).
+  useEffect(() => { if (open) setData(initial ?? emptyForm()) }, [open, initial])
   if (!open) return null
 
   return (
@@ -344,14 +346,14 @@ export default function TenantsPage() {
                         <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
                         {t.status}
                       </span>
-                      <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="flex gap-1">
                         <button onClick={() => setEditTarget({ id: t.id, data: { name: t.name, email: t.email, phone: t.phone, propertyId: t.propertyId, unit: t.unit, leaseStart: t.leaseStart, leaseEnd: t.leaseEnd, rent: String(t.rent), status: t.status } })}
-                          className="flex h-6 w-6 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground" title="Edit">
-                          <PencilSimple className="h-3 w-3" />
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground" title="Edit tenant" aria-label={`Edit ${t.name}`}>
+                          <PencilSimple className="h-3.5 w-3.5" />
                         </button>
                         <button onClick={() => setDeleteTarget(t)}
-                          className="flex h-6 w-6 items-center justify-center rounded-lg text-muted-foreground hover:bg-danger/10 hover:text-danger" title="Remove">
-                          <TrashSimple className="h-3 w-3" />
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-danger/10 hover:text-danger" title="Remove tenant" aria-label={`Remove ${t.name}`}>
+                          <TrashSimple className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>

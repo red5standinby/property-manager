@@ -13,22 +13,11 @@ function generateId(prefix: string): string {
 
 const today = () => new Date().toISOString().slice(0, 10)
 
-/** Recompute cached display fields (occupancy/revenue) on properties. */
-function recomputeProperties(properties: Property[], tenants: Tenant[]): Property[] {
-  return properties.map(p => {
-    const propTenants = tenants.filter(t => t.propertyId === p.id)
-    const occupied = Math.min(propTenants.length, p.units)
-    const total = propTenants.reduce((sum, t) => sum + t.rent, 0)
-    return {
-      ...p,
-      occupied,
-      revenue: total > 0 ? `$${total.toLocaleString()}` : '—',
-    }
-  })
-}
-
+/** Occupancy is derived from active leases (see src/lib/derived.ts), so there
+ *  are no cached property fields to recompute. Kept as a pass-through so the
+ *  many call sites stay readable and we have one seam if that changes. */
 function recomputeAll(state: AppState): AppState {
-  return { ...state, properties: recomputeProperties(state.properties, state.tenants) }
+  return state
 }
 
 export function appReducer(state: AppState, action: AppAction): AppState {
@@ -38,12 +27,10 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       const property: Property = {
         ...action.payload,
         id: generateId('prop'),
-        occupied: 0,
-        revenue: '—',
         createdAt: today(),
         updatedAt: today(),
       }
-      return recomputeAll({ ...state, properties: [...state.properties, property] })
+      return { ...state, properties: [...state.properties, property] }
     }
 
     case 'UPDATE_PROPERTY': {
@@ -52,7 +39,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
           ? { ...p, ...action.payload, updatedAt: today() }
           : p
       )
-      return recomputeAll({ ...state, properties })
+      return { ...state, properties }
     }
 
     case 'DELETE_PROPERTY': {
@@ -223,18 +210,18 @@ export function buildSeedState(): AppState {
 
   const properties: Property[] = [
     {
-      id: 'prop-1', name: 'Willow Creek Apartments', address: '412 Willow Creek Rd, Austin, TX 78701',
-      units: 6, occupied: 0, type: 'Multi-family', revenue: '—', status: 'active',
+      id: 'prop-1', name: 'Willow Creek House', address: '412 Willow Creek Rd, Austin, TX 78701',
+      type: 'Single-family', status: 'active',
       createdAt: iso(addDays(now, -400)), updatedAt: iso(now),
     },
     {
       id: 'prop-2', name: 'Maple Street Duplex', address: '88 Maple St, Austin, TX 78704',
-      units: 2, occupied: 0, type: 'Single-family', revenue: '—', status: 'active',
+      type: 'Duplex', status: 'active',
       createdAt: iso(addDays(now, -300)), updatedAt: iso(now),
     },
     {
-      id: 'prop-3', name: 'Cedar Park Townhomes', address: '9 Cedar Park Ln, Round Rock, TX 78664',
-      units: 3, occupied: 0, type: 'Townhome', revenue: '—', status: 'renovation',
+      id: 'prop-3', name: 'Cedar Park Townhome', address: '9 Cedar Park Ln, Round Rock, TX 78664',
+      type: 'Townhome', status: 'renovation',
       createdAt: iso(addDays(now, -200)), updatedAt: iso(now),
     },
   ]

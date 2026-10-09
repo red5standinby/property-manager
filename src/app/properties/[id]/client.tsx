@@ -5,10 +5,12 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { AppShell } from '@/src/components/layout/app-shell'
 import { useApp } from '@/src/store/context'
+import { propertyOccupancy, propertyMonthlyRent } from '@/src/lib/derived'
 import type { Tenant } from '@/src/lib/types'
 import {
   Buildings, ArrowLeft, Users, CurrencyDollar, MapPin,
   Envelope, Phone, PencilSimple, TrashSimple, X, Plus,
+  CheckCircle, House,
 } from '@phosphor-icons/react'
 
 const statusStyles: Record<string, string> = {
@@ -54,6 +56,8 @@ function TenantFormModal({
   propertyName: string
 }) {
   const [data, setData] = useState<TenantFormData>(initial ?? emptyTenantForm())
+  // Re-seed on open / when targeting a different record (avoids stale form).
+  useEffect(() => { if (open) setData(initial ?? emptyTenantForm()) }, [open, initial])
   if (!open) return null
 
   return (
@@ -227,7 +231,8 @@ export default function PropertyDetailClient() {
     )
   }
 
-  const occupancyPct = property.units > 0 ? Math.round((property.occupied / property.units) * 100) : 0
+  const occupancy = propertyOccupancy(property.id, state.leases)
+  const monthlyRent = propertyMonthlyRent(property.id, state.leases)
 
   function handleAddTenant(data: TenantFormData) {
     if (!property) return
@@ -250,12 +255,15 @@ export default function PropertyDetailClient() {
   }
 
   function handleEditTenant(data: TenantFormData) {
-    if (!editTarget) return
+    if (!editTarget || !property) return
     const payload: import('@/src/lib/types').UpdateTenantPayload = {
       id: editTarget.id,
       name: data.name,
       email: data.email,
       phone: data.phone,
+      // Preserve the property link — the edit form doesn't expose it, and
+      // omitting it here would orphan the tenant from its property.
+      propertyId: property.id,
       unit: data.unit,
       leaseStart: data.leaseStart,
       leaseEnd: data.leaseEnd,
@@ -306,10 +314,10 @@ export default function PropertyDetailClient() {
           {/* Stats cards */}
           <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
-              { label: 'Units',     value: String(property.units),    icon: Buildings,      color: 'text-primary', bg: 'bg-primary/10' },
-              { label: 'Occupied',  value: String(property.occupied), icon: Users,          color: 'text-violet-400', bg: 'bg-violet-500/10' },
-              { label: 'Vacancy',   value: `${100 - occupancyPct}%`,  icon: Buildings,      color: occupancyPct >= 90 ? 'text-success' : 'text-warning', bg: 'bg-muted/60' },
-              { label: 'Revenue',   value: property.revenue,           icon: CurrencyDollar, color: 'text-success', bg: 'bg-success/10' },
+              { label: 'Status',    value: occupancy === 'occupied' ? 'Occupied' : 'Vacant', icon: occupancy === 'occupied' ? CheckCircle : House, color: occupancy === 'occupied' ? 'text-success' : 'text-muted-foreground', bg: occupancy === 'occupied' ? 'bg-success/10' : 'bg-muted/60' },
+              { label: 'Type',      value: property.type,      icon: Buildings,      color: 'text-primary', bg: 'bg-primary/10' },
+              { label: 'Tenants',   value: String(propertyTenants.length), icon: Users, color: 'text-violet-400', bg: 'bg-violet-500/10' },
+              { label: 'Rent',      value: monthlyRent > 0 ? `$${monthlyRent.toLocaleString()}` : '—', icon: CurrencyDollar, color: 'text-success', bg: 'bg-success/10' },
             ].map(s => (
               <div key={s.label} className="rounded-2xl border border-border bg-card/40 p-4">
                 <div className={`mb-2 inline-flex rounded-lg p-1.5 ${s.bg}`}>
@@ -321,16 +329,17 @@ export default function PropertyDetailClient() {
             ))}
           </div>
 
-          {/* Occupancy bar */}
-          <div className="mb-6 rounded-2xl border border-border bg-card/40 p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-medium text-foreground/75">Occupancy</span>
-              <span className="text-xs font-semibold text-foreground/75">{occupancyPct}%</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted">
-              <div className={`h-full rounded-full ${occupancyPct >= 90 ? 'bg-success' : occupancyPct >= 70 ? 'bg-primary' : 'bg-warning'}`}
-                style={{ width: `${occupancyPct}%` }} />
-            </div>
+          {/* Occupancy status */}
+          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-border bg-card/40 p-4">
+            <span className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${occupancy === 'occupied' ? 'border border-success/20 bg-success/10 text-success' : 'border border-border bg-muted/60 text-muted-foreground'}`}>
+              {occupancy === 'occupied' ? <CheckCircle weight="fill" className="h-3.5 w-3.5" /> : <House className="h-3.5 w-3.5" />}
+              {occupancy === 'occupied' ? 'Occupied' : 'Vacant'}
+            </span>
+            <span className="text-xs text-muted-foreground/70">
+              {occupancy === 'occupied'
+                ? `${propertyTenants.length} ${propertyTenants.length === 1 ? 'tenant' : 'tenants'} · ${monthlyRent > 0 ? `$${monthlyRent.toLocaleString()}/mo under contract` : 'no rent on record'}`
+                : 'No active lease — add a tenant to mark this home occupied.'}
+            </span>
           </div>
 
           {/* Tenants list */}
@@ -372,14 +381,14 @@ export default function PropertyDetailClient() {
                     <span className={`shrink-0 rounded-lg px-2 py-0.5 text-[10px] font-medium capitalize ${statusStyles[t.status]}`}>
                       {t.status}
                     </span>
-                    <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div className="flex gap-1">
                       <button onClick={() => setEditTarget({ id: t.id, data: { name: t.name, email: t.email, phone: t.phone, unit: t.unit, leaseStart: t.leaseStart, leaseEnd: t.leaseEnd, rent: String(t.rent), status: t.status } })}
-                        className="flex h-6 w-6 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground" title="Edit">
-                        <PencilSimple className="h-3 w-3" />
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground" title="Edit tenant" aria-label={`Edit ${t.name}`}>
+                        <PencilSimple className="h-3.5 w-3.5" />
                       </button>
                       <button onClick={() => setDeleteTarget(t)}
-                        className="flex h-6 w-6 items-center justify-center rounded-lg text-muted-foreground hover:bg-danger/10 hover:text-danger" title="Remove">
-                        <TrashSimple className="h-3 w-3" />
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-danger/10 hover:text-danger" title="Remove tenant" aria-label={`Remove ${t.name}`}>
+                        <TrashSimple className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>

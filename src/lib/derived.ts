@@ -212,3 +212,33 @@ export function propertyName(properties: Property[], propertyId: string): string
 export function tenantName(tenants: Tenant[], tenantId: string): string {
   return tenants.find(t => t.id === tenantId)?.name ?? 'Unknown tenant'
 }
+
+// ─── Occupancy (derived — properties are single homes) ────────────
+
+/** A property is occupied when it has at least one active lease. */
+export type Occupancy = 'occupied' | 'vacant'
+
+export function propertyOccupancy(propertyId: string, leases: Lease[]): Occupancy {
+  const hasActive = leases.some(l => l.propertyId === propertyId && leaseStatus(l) !== 'ended')
+  return hasActive ? 'occupied' : 'vacant'
+}
+
+/** Counts across a portfolio, for the dashboard. */
+export function occupancyCounts(
+  properties: Pick<Property, 'id'>[],
+  leases: Lease[],
+): { occupied: number; vacant: number; total: number; pct: number } {
+  let occupied = 0
+  for (const p of properties) {
+    if (propertyOccupancy(p.id, leases) === 'occupied') occupied += 1
+  }
+  const total = properties.length
+  return { occupied, vacant: total - occupied, total, pct: total > 0 ? Math.round((occupied / total) * 100) : 0 }
+}
+
+/** Monthly rent currently under contract at a property (active leases). */
+export function propertyMonthlyRent(propertyId: string, leases: Lease[]): number {
+  return leases
+    .filter(l => l.propertyId === propertyId && leaseStatus(l) !== 'ended')
+    .reduce((sum, l) => sum + l.rent, 0)
+}

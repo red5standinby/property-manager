@@ -7,9 +7,12 @@ import type { AppState, Property, Tenant, Lease, Payment, MaintenanceRequest } f
 // DEMO_STATE to the storage adapter under the app's storage key, or via the
 // app's demo/seed entry point.
 //
-// Portfolio: 3 properties, 5 tenants, 6 units. Deliberately includes edge
+// Portfolio: 3 properties, 5 tenants. Deliberately includes edge
 // cases the Ops view exists to surface: an overdue rent, a partial payment,
 // a waived late fee, a lease expiring within 30 days, and open maintenance.
+//
+// Properties are single rentable homes; occupancy is derived from active
+// leases, not stored.
 
 const today = new Date()
 const iso = (d: Date) => d.toISOString().slice(0, 10)
@@ -32,22 +35,16 @@ const properties: Property[] = [
     id: 'prop-maple',
     name: 'Maple Street Duplex',
     address: '142 Maple St, Hartford, CT 06106',
-    units: 2,
-    occupied: 2,
     type: 'Duplex',
-    revenue: '$3,400',
     status: 'active',
     createdAt: '2024-03-01',
     updatedAt: iso(today),
   },
   {
     id: 'prop-oak',
-    name: 'Oak Avenue Triplex',
+    name: 'Oak Avenue House',
     address: '88 Oak Ave, New Britain, CT 06051',
-    units: 3,
-    occupied: 2,
-    type: 'Triplex',
-    revenue: '$4,050',
+    type: 'Single-family',
     status: 'active',
     createdAt: '2024-08-15',
     updatedAt: iso(today),
@@ -56,10 +53,7 @@ const properties: Property[] = [
     id: 'prop-cedar',
     name: 'Cedar Lane Cottage',
     address: '7 Cedar Ln, Middletown, CT 06457',
-    units: 1,
-    occupied: 1,
-    type: 'Single Family',
-    revenue: '$1,850',
+    type: 'Single-family',
     status: 'active',
     createdAt: '2025-01-10',
     updatedAt: iso(today),

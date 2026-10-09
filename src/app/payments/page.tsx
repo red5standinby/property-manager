@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AppShell } from '@/src/components/layout/app-shell'
 import { useApp } from '@/src/store/context'
 import { StatusBadge, toneFor } from '@/src/components/status-badge'
@@ -58,6 +58,12 @@ function PaymentFormModal({
     amount: '0', lateFee: '0', lateFeeWaived: false, type: 'rent', method: 'ach',
     status: 'pending', paidAt: '', note: '',
   })
+  // Re-seed on open / when targeting a different record (avoids stale form).
+  useEffect(() => { if (open) setData(initial ?? {
+    leaseId: '', tenantId: '', periodStart: monthStart(), periodEnd: monthEnd(),
+    amount: '0', lateFee: '0', lateFeeWaived: false, type: 'rent', method: 'ach',
+    status: 'pending', paidAt: '', note: '',
+  }) }, [open, initial])
   if (!open) return null
 
   return (

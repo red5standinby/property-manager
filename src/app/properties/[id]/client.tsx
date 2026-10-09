@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { AppShell } from '@/src/components/layout/app-shell'
@@ -180,13 +180,40 @@ function initials(name: string) {
 
 export default function PropertyDetailClient() {
   const params = useParams()
-  const { state, dispatch } = useApp()
-  const property = state.properties.find(p => p.id === params.id)
-  const propertyTenants = state.tenants.filter(t => t.propertyId === params.id)
+  const { state, dispatch, hydrated } = useApp()
+
+  // Static export can only prerender ids known at build time (none, since the
+  // seed is empty). Every /properties/<id> URL therefore serves the
+  // __placeholder page, and useParams() returns "__placeholder" instead of the
+  // real id. Read the id from the URL on the client so runtime-created /
+  // edited properties resolve correctly.
+  const [urlId, setUrlId] = useState<string>(() =>
+    typeof params.id === 'string' && params.id !== '__placeholder' ? params.id : '',
+  )
+  useEffect(() => {
+    const m = window.location.pathname.match(/\/properties\/([^/]+)/)
+    const id = m ? decodeURIComponent(m[1]) : ''
+    if (id && id !== '__placeholder') setUrlId(id)
+  }, [params.id])
+
+  const property = state.properties.find(p => p.id === urlId)
+  const propertyTenants = state.tenants.filter(t => t.propertyId === urlId)
 
   const [addOpen, setAddOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<{ id: string; data: TenantFormData } | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Tenant | null>(null)
+
+  // On a cold deep-link the store hasn't finished hydrating from localStorage
+  // yet, so `properties` looks empty for a tick. Don't flash "not found".
+  if (!hydrated) {
+    return (
+      <AppShell>
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-primary" />
+        </div>
+      </AppShell>
+    )
+  }
 
   if (!property) {
     return (

@@ -16,8 +16,38 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 
 class RewriteHandler(SimpleHTTPRequestHandler):
+    # Dynamic routes that only have one prerendered HTML at build time. Any id
+    # created/edited at runtime has no static file, so fall back to the
+    # placeholder build; the client component reads the real id from the URL.
+    DYNAMIC_PREFIXES = (("/properties/", "/properties/__placeholder.html"),)
+
+    def _dynamic_fallback(self, local):
+        # Dynamic routes only have one prerendered HTML at build time. Any id
+        # created/edited at runtime has no static file, so fall back to the
+        # placeholder build; the client component reads the real id from URL.
+        #
+        # The export may be mounted under a basePath (e.g. /property-manager),
+        # so build the fallback from the same directory that contains the
+        # matched segment, not from the export root.
+        rel = os.path.relpath(local, os.getcwd()).replace(os.sep, "/")
+        segments = [s for s in rel.split("/") if s]
+        for prefix, fallback in self.DYNAMIC_PREFIXES:
+            seg = prefix.strip("/")  # e.g. "properties"
+            if seg not in segments:
+                continue
+            # Drop everything after the segment and append the fallback file.
+            head = segments[: segments.index(seg)]
+            cand = os.path.join(os.getcwd(), *head, fallback.strip("/"))
+            if os.path.isfile(cand):
+                return cand
+        return None
+
     def translate_path(self, path):
         local = super().translate_path(path)
+        if not os.path.exists(local):
+            dyn = self._dynamic_fallback(local)
+            if dyn:
+                return dyn
         if os.path.isdir(local):
             index = os.path.join(local, "index.html")
             if os.path.isfile(index):
@@ -26,6 +56,9 @@ class RewriteHandler(SimpleHTTPRequestHandler):
             sibling = local.rstrip("/") + ".html"
             if os.path.isfile(sibling):
                 return sibling
+            dyn = self._dynamic_fallback(local)
+            if dyn:
+                return dyn
         elif not os.path.exists(local):
             if os.path.isfile(local + ".html"):
                 return local + ".html"

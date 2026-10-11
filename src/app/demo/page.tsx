@@ -46,6 +46,7 @@ export default function DemoPage() {
         </button>
         <Link
           href="/ops"
+          prefetch={false}
           className="mt-4 block text-center text-xs text-muted-foreground underline-offset-4 hover:underline"
         >
           Skip — go to Ops view

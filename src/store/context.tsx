@@ -5,6 +5,8 @@ import type { AppState, AppAction, Role } from '@/src/lib/types'
 import { seedData } from '@/src/lib/seed'
 import { appReducer, buildSeedState } from './reducer'
 import { storage } from '@/src/lib/storage'
+import { backend } from '@/src/lib/supabase/env'
+import { remoteStorage } from '@/src/lib/storage-remote'
 
 type AppDispatch = (action: AppAction) => void
 
@@ -52,9 +54,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Hydrate from the storage adapter after mount (client-only) to avoid
   // server/client markup mismatches (React hydration error #418).
+  //
+  // remote backend: the adapter is async (fetch), so hydrate then RESET. On
+  //   failure (unauthenticated) fall back to the empty state — middleware
+  //   will have redirected to /login.
+  // local backend: synchronous localStorage read, same as the beta.
   useEffect(() => {
     if (hydratedRef.current) return
     hydratedRef.current = true
+
+    if (backend === 'remote') {
+      remoteStorage.hydrate().then((remote) => {
+        dispatch({ type: 'RESET', payload: remote ? normalizeState(remote) : EMPTY_STATE })
+      })
+      return
+    }
     dispatch({ type: 'RESET', payload: loadState() })
   }, [])
 

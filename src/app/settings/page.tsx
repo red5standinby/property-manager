@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { AppShell } from '@/src/components/layout/app-shell'
+import { SecuritySection } from '@/src/components/settings/security-section'
 import {
   User,
   Lock,
@@ -160,6 +161,7 @@ export default function SettingsPage() {
 
   const renderContent = () => {
     if (activeTab === 'profile') return <ProfileSection />
+    if (activeTab === 'security') return <SecuritySection />
     if (activeTab === 'notifications') return <NotificationsSection />
     return (
       <PlaceholderSection
